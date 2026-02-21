@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { AnyZodObject, ZodError } from 'zod';
+import { AnyZodObject, ZodError, ZodTypeAny } from 'zod';
 
 /**
  * validate
@@ -12,7 +12,7 @@ import { AnyZodObject, ZodError } from 'zod';
  * so the controller/service always receives clean, normalized input.
  */
 export const validate =
-  (schema: AnyZodObject) =>
+  (schema: ZodTypeAny) =>
   async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
     try {
       req.body = await schema.parseAsync(req.body);

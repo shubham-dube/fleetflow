@@ -8,96 +8,71 @@ import { corsOptions } from './config/cors';
 import { logger } from './middleware/logger.middleware';
 import { errorMiddleware } from './middleware/error.middleware';
 
-// ── Module Routers ────────────────────────────────────────────────────────────
+// ── Module Routers ──────────────────────────────────────────────────
 import authRouter from './modules/auth/auth.routes';
+import vehiclesRouter from './modules/vehicles/vehicles.routes';
+import driversRouter from './modules/drivers/drivers.route';
+import tripsRouter from './modules/trips/trips.routes';
+import maintenanceRouter from './modules/vehicle_maintenance/maintenance.routes';
+import fuelLogsRouter from './modules/fuel_logs/fuel_logs.routes';
+import analyticsRouter from './modules/analytics/analytics.routes';
 
 const app = express();
 
-// ── Security Headers ──────────────────────────────────────────────────────────
-app.use(
-  helmet({
-    crossOriginResourcePolicy: { policy: 'cross-origin' },
-  })
-);
-
-// ── CORS ──────────────────────────────────────────────────────────────────────
+// ── Security & Performance ──────────────────────────────────────────
+app.use(helmet());
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // pre-flight requests
-
-// ── Compression ───────────────────────────────────────────────────────────────
 app.use(compression());
-
-// ── Request Logging ───────────────────────────────────────────────────────────
+app.use(cookieParser()); // parse cookies for refresh token httpOnly cookie
 app.use(logger);
 
-// ── Body Parsing ──────────────────────────────────────────────────────────────
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser()); // required for httpOnly refresh token cookie
-
-// ── Rate Limiting ─────────────────────────────────────────────────────────────
+// ── Rate Limiting ───────────────────────────────────────────────────
 const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 300,
+  windowMs: 15 * 60 * 1000,  // 15 minutes
+  max: 200,
   standardHeaders: true,
   legacyHeaders: false,
-  message: {
-    success: false,
-    error: { code: 'RATE_LIMITED', message: 'Too many requests, please try again later' },
-  },
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many requests, please try again later' } },
 });
+app.use('/api', globalLimiter);
 
-// Stricter limit specifically for login — prevents brute force
+// Stricter limit on auth endpoints (prevent brute force)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 15, // 15 login attempts per 15 minutes per IP
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    success: false,
-    error: { code: 'RATE_LIMITED', message: 'Too many login attempts, please try again later' },
-  },
+  max: 10,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many login attempts, please try again in 15 minutes' } },
 });
-
-app.use('/api', globalLimiter);
 app.use('/api/v1/auth/login', authLimiter);
+app.use('/api/v1/auth/refresh', authLimiter);
 
-// ── Health Check ──────────────────────────────────────────────────────────────
+// ── Body Parsing ────────────────────────────────────────────────────
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// ── Health Check (unauthenticated) ──────────────────────────────────
 app.get('/health', (_req, res) => {
-  res.status(200).json({
-    success: true,
-    data: {
-      status: 'healthy',
-      service: 'FleetFlow API',
-      timestamp: new Date().toISOString(),
-      version: process.env['npm_package_version'] ?? '1.0.0',
-    },
-  });
+  res.json({ success: true, data: { status: 'ok', timestamp: new Date().toISOString() } });
 });
 
-// ── API v1 Routes ─────────────────────────────────────────────────────────────
-const API_V1 = '/api/v1';
+// ── API Routes ──────────────────────────────────────────────────────
+const API = '/api/v1';
+app.use(`${API}/auth`, authRouter);
+app.use(`${API}/vehicles`, vehiclesRouter);
+app.use(`${API}/drivers`, driversRouter);
+app.use(`${API}/trips`, tripsRouter);
+app.use(`${API}/maintenance`, maintenanceRouter);
+app.use(`${API}/fuel-logs`, fuelLogsRouter);
+app.use(`${API}/analytics`, analyticsRouter);
 
-app.use(`${API_V1}/auth`, authRouter);
-// app.use(`${API_V1}/vehicles`, vehiclesRouter);
-// app.use(`${API_V1}/drivers`, driversRouter);
-// app.use(`${API_V1}/trips`, tripsRouter);
-// app.use(`${API_V1}/maintenance`, maintenanceRouter);
-// app.use(`${API_V1}/fuel-logs`, fuelLogsRouter);
-// app.use(`${API_V1}/analytics`, analyticsRouter);
-
-// ── 404 Catch-All ─────────────────────────────────────────────────────────────
+// ── 404 for unmatched routes ────────────────────────────────────────
 app.use((_req, res) => {
   res.status(404).json({
     success: false,
-    error: {
-      code: 'ROUTE_NOT_FOUND',
-      message: 'The requested route does not exist',
-    },
+    error: { code: 'NOT_FOUND', message: 'The requested endpoint does not exist' },
   });
 });
 
-// ── Global Error Handler (MUST be last) ──────────────────────────────────────
+// ── Global Error Handler (must be registered last) ──────────────────
 app.use(errorMiddleware);
 
 export default app;
