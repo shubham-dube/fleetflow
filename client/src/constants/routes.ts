@@ -1,7 +1,7 @@
 
 export const ROUTES = {
-  LOGIN: '/auth/login',
-  SIGNUP: 'signup',
+  LOGIN: '/login',
+  SIGNUP: '/signup',
   DASHBOARD: '/dashboard',
   VEHICLES: '/dashboard/vehicles',
   VEHICLE_DETAIL: (id: string) => `/dashboard/vehicles/${id}`,
