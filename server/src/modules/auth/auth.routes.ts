@@ -1,11 +1,9 @@
 import { Router } from 'express';
 import { authenticate } from '../../middleware/auth.middleware';
-import { authorize } from '../../middleware/rbac.middleware';
 import { validate } from '../../middleware/validate.middleware';
 import {
   loginSchema,
   registerSchema,
-  refreshTokenSchema,
   changePasswordSchema,
 } from './auth.schema';
 
