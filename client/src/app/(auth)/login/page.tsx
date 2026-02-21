@@ -4,20 +4,22 @@ import { useState } from 'react'
 import { useLogin } from '@/hooks/useAuth'
 import { FormField, Input } from '@/components/shared/FormComponents'
 import { Zap, Eye, EyeOff, Loader2 } from 'lucide-react'
+import Link from 'next/link'
+import { ROUTES } from '@/constants/routes'
 import type { ApiError } from '@/types/api.types'
 
 const DEMO_CREDENTIALS = [
-  { role: 'Manager', email: 'manager@fleetflow.com' },
-  { role: 'Dispatcher', email: 'dispatcher@fleetflow.com' },
+  { role: 'Manager',        email: 'manager@fleetflow.com' },
+  { role: 'Dispatcher',     email: 'dispatcher@fleetflow.com' },
   { role: 'Safety Officer', email: 'safety@fleetflow.com' },
-  { role: 'Analyst', email: 'analyst@fleetflow.com' },
+  { role: 'Analyst',        email: 'analyst@fleetflow.com' },
 ]
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [email, setEmail]               = useState('')
+  const [password, setPassword]         = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError]               = useState<string | null>(null)
 
   const loginMutation = useLogin()
 
@@ -116,6 +118,26 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+
+          {/* Divider */}
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-bg-border" />
+            </div>
+            <div className="relative flex justify-center">
+              <span className="px-2 text-[10px] text-text-muted bg-bg-card font-body uppercase tracking-wider">
+                or
+              </span>
+            </div>
+          </div>
+
+          {/* Register button */}
+          <Link
+            href={ROUTES.SIGNUP}
+            className="btn-secondary w-full justify-center py-2.5 text-sm"
+          >
+            Create an account
+          </Link>
         </div>
 
         {/* Demo credentials */}
