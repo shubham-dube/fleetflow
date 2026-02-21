@@ -10,6 +10,6 @@
  *  - Timing-attack-safe login (constant-time bcrypt even on missing users)
  *  - Password changes invalidate all active sessions
  */
-export { default as authRouter } from './routes';
-export * as authService from './service';
-export type { SafeUser, TokenPair, AuthPayload } from './service';
+export { default as authRouter } from './auth.routes';
+export * as authService from './auth.service';
+export type { SafeUser, TokenPair, AuthPayload } from './auth.service';

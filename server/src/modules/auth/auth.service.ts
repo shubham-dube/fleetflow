@@ -7,7 +7,7 @@ import { env } from '../../config/env';
 import { AppError } from '../../middleware/error.middleware';
 import { HTTP } from '../../constants/statusCodes';
 import { MSG } from '../../constants/messages';
-import type { LoginInput, RegisterInput, ChangePasswordInput } from './schema';
+import type { LoginInput, RegisterInput, ChangePasswordInput } from './auth.schema';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

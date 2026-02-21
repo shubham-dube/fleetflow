@@ -2,7 +2,7 @@ import 'dotenv/config'; // Must be first — loads .env before any other import 
 import app from './app';
 import { env } from './config/env';
 import { prisma } from './config/prisma';
-import { cleanExpiredTokens } from './modules/auth/service';
+import { cleanExpiredTokens } from './modules/auth/auth.service';
 
 const startServer = async (): Promise<void> => {
   // ── Database Connection Check ───────────────────────────────────────────

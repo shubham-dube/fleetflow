@@ -9,13 +9,7 @@ import { logger } from './middleware/logger.middleware';
 import { errorMiddleware } from './middleware/error.middleware';
 
 // ── Module Routers ────────────────────────────────────────────────────────────
-import authRouter from './modules/auth/routes';
-import vehiclesRouter from './modules/vehicles/routes';
-import driversRouter from './modules/drivers/routes';
-import tripsRouter from './modules/trips/routes';
-import maintenanceRouter from './modules/maintenance/routes';
-import fuelLogsRouter from './modules/fuel-logs/routes';
-import analyticsRouter from './modules/analytics/routes';
+import authRouter from './modules/auth/auth.routes';
 
 const app = express();
 
@@ -85,12 +79,12 @@ app.get('/health', (_req, res) => {
 const API_V1 = '/api/v1';
 
 app.use(`${API_V1}/auth`, authRouter);
-app.use(`${API_V1}/vehicles`, vehiclesRouter);
-app.use(`${API_V1}/drivers`, driversRouter);
-app.use(`${API_V1}/trips`, tripsRouter);
-app.use(`${API_V1}/maintenance`, maintenanceRouter);
-app.use(`${API_V1}/fuel-logs`, fuelLogsRouter);
-app.use(`${API_V1}/analytics`, analyticsRouter);
+// app.use(`${API_V1}/vehicles`, vehiclesRouter);
+// app.use(`${API_V1}/drivers`, driversRouter);
+// app.use(`${API_V1}/trips`, tripsRouter);
+// app.use(`${API_V1}/maintenance`, maintenanceRouter);
+// app.use(`${API_V1}/fuel-logs`, fuelLogsRouter);
+// app.use(`${API_V1}/analytics`, analyticsRouter);
 
 // ── 404 Catch-All ─────────────────────────────────────────────────────────────
 app.use((_req, res) => {

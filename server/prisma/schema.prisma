@@ -12,13 +12,65 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserRole { MANAGER DISPATCHER SAFETY_OFFICER ANALYST }
-enum VehicleType { TRUCK VAN BIKE }
-enum VehicleStatus { AVAILABLE ON_TRIP IN_SHOP RETIRED }
-enum DriverStatus { ON_DUTY OFF_DUTY SUSPENDED }
-enum LicenseCategory { TRUCK VAN BIKE }
-enum TripStatus { DRAFT DISPATCHED IN_TRANSIT COMPLETED CANCELLED }
-enum ServiceType { OIL_CHANGE TIRE_ROTATION BRAKE_SERVICE ENGINE_REPAIR ELECTRICAL BODY_WORK INSPECTION OTHER }
+// ─────────────────────────────────────────────────────────────
+// ENUMS — each value must be on its own line (Prisma requirement)
+// ─────────────────────────────────────────────────────────────
+
+enum UserRole {
+  MANAGER
+  DISPATCHER
+  SAFETY_OFFICER
+  ANALYST
+}
+
+enum VehicleType {
+  TRUCK
+  VAN
+  BIKE
+}
+
+enum VehicleStatus {
+  AVAILABLE
+  ON_TRIP
+  IN_SHOP
+  RETIRED
+}
+
+enum DriverStatus {
+  ON_DUTY
+  OFF_DUTY
+  SUSPENDED
+}
+
+// Must match VehicleType — enforced in service layer
+enum LicenseCategory {
+  TRUCK
+  VAN
+  BIKE
+}
+
+enum TripStatus {
+  DRAFT
+  DISPATCHED
+  IN_TRANSIT
+  COMPLETED
+  CANCELLED
+}
+
+enum ServiceType {
+  OIL_CHANGE
+  TIRE_ROTATION
+  BRAKE_SERVICE
+  ENGINE_REPAIR
+  ELECTRICAL
+  BODY_WORK
+  INSPECTION
+  OTHER
+}
+
+// ─────────────────────────────────────────────────────────────
+// USERS
+// ─────────────────────────────────────────────────────────────
 
 model User {
   id           String    @id @default(uuid())
@@ -45,11 +97,16 @@ model RefreshToken {
   token     String   @unique
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("refresh_tokens")
 }
+
+// ─────────────────────────────────────────────────────────────
+// VEHICLES
+// ─────────────────────────────────────────────────────────────
 
 model Vehicle {
   id              String        @id @default(uuid())
@@ -73,10 +130,14 @@ model Vehicle {
   fuelLogs        FuelLog[]
 
   @@index([status])
-  @@index([type, status])
+  @@index([type, status])   // Dispatcher filter: available trucks/vans/bikes
   @@index([isActive, status])
   @@map("vehicles")
 }
+
+// ─────────────────────────────────────────────────────────────
+// DRIVERS
+// ─────────────────────────────────────────────────────────────
 
 model Driver {
   id                String          @id @default(uuid())
@@ -100,7 +161,7 @@ model Driver {
 
   @@index([status, isActive])
   @@index([licenseCategory, status])
-  @@index([licenseExpiryDate])
+  @@index([licenseExpiryDate])   // Nightly expiry-alert query
   @@map("drivers")
 }
 
@@ -109,18 +170,23 @@ model DriverIncident {
   driverId    String   @map("driver_id")
   tripId      String?  @map("trip_id")
   description String
-  severity    Int      @default(1) @db.SmallInt
+  severity    Int      @default(1) @db.SmallInt   // 1 (minor) → 5 (critical)
   reportedAt  DateTime @default(now()) @map("reported_at")
   reportedBy  String?  @map("reported_by")
+
   driver Driver @relation(fields: [driverId], references: [id])
 
   @@index([driverId])
   @@map("driver_incidents")
 }
 
+// ─────────────────────────────────────────────────────────────
+// TRIPS
+// ─────────────────────────────────────────────────────────────
+
 model Trip {
   id                 String     @id @default(uuid())
-  tripNumber         String     @unique @map("trip_number")
+  tripNumber         String     @unique @map("trip_number")  // TRP-00001
   vehicleId          String     @map("vehicle_id")
   driverId           String     @map("driver_id")
   createdById        String     @map("created_by_id")
@@ -149,9 +215,13 @@ model Trip {
   @@index([status])
   @@index([vehicleId, status])
   @@index([driverId, status])
-  @@index([createdAt])
+  @@index([createdAt])           // Monthly financial reporting
   @@map("trips")
 }
+
+// ─────────────────────────────────────────────────────────────
+// MAINTENANCE
+// ─────────────────────────────────────────────────────────────
 
 model Maintenance {
   id                String      @id @default(uuid())
@@ -162,7 +232,9 @@ model Maintenance {
   cost              Decimal     @db.Decimal(10, 2)
   vendor            String?
   serviceDate       DateTime    @map("service_date") @db.Date
-  // completedAt IS NULL = vehicle IN_SHOP | NOT NULL = maintenance done
+
+  // KEY: completedAt IS NULL = vehicle currently IN_SHOP
+  //      completedAt NOT NULL = service done, vehicle AVAILABLE
   completedAt       DateTime?   @map("completed_at")
   odometerAtService Decimal?    @map("odometer_at_service") @db.Decimal(10, 2)
   createdAt         DateTime    @default(now()) @map("created_at")
@@ -172,19 +244,25 @@ model Maintenance {
   loggedBy User    @relation("MaintenanceLoggedBy", fields: [loggedById], references: [id])
 
   @@index([vehicleId])
-  @@index([vehicleId, completedAt])
+  @@index([vehicleId, completedAt])  // "In Shop" query: WHERE completed_at IS NULL
   @@index([serviceDate])
   @@map("maintenance_logs")
 }
 
+// ─────────────────────────────────────────────────────────────
+// FUEL LOGS
+// ─────────────────────────────────────────────────────────────
+
 model FuelLog {
   id           String   @id @default(uuid())
   vehicleId    String   @map("vehicle_id")
-  tripId       String?  @map("trip_id")
+  tripId       String?  @map("trip_id")   // optional: fuel logged outside a trip
   driverName   String?  @map("driver_name")
   liters       Decimal  @db.Decimal(8, 2)
   costPerLiter Decimal  @map("cost_per_liter") @db.Decimal(6, 3)
   totalCost    Decimal  @map("total_cost") @db.Decimal(10, 2)
+
+  // odometerKm enables: efficiency = (odometer_now - odometer_prev) / liters
   odometerKm   Decimal  @map("odometer_km") @db.Decimal(10, 2)
   loggedAt     DateTime @default(now()) @map("logged_at")
   notes        String?
@@ -193,7 +271,7 @@ model FuelLog {
   vehicle Vehicle @relation(fields: [vehicleId], references: [id])
   trip    Trip?   @relation(fields: [tripId], references: [id])
 
-  @@index([vehicleId, loggedAt])
-  @@index([loggedAt])
+  @@index([vehicleId, loggedAt])   // Efficiency calculation (ordered by time)
+  @@index([loggedAt])              // Monthly cost aggregation
   @@map("fuel_logs")
 }

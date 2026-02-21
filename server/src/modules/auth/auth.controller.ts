@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { sendSuccess, sendCreated } from '../../utils/apiResponse';
-import * as authService from './service';
+import * as authService from './auth.service';
 
 // ─── Cookie Config ────────────────────────────────────────────────────────────
 // Refresh token is stored in an httpOnly cookie — inaccessible to JavaScript.
